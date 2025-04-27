@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nonce Finder</title>
+</head>
+<body>
+    <h1>Nonce Finder</h1>
+    
+    <label for="prefix">Prefix (e.g., H): </label>
+    <input type="text" id="prefix" />
+    
+    <label for="inputString">Input String: </label>
+    <input type="text" id="inputString" />
+    
+    <button onclick="findNonces()">Start</button>
+
+    <div id="results"></div>
+    
+    <script>
+        function sha256(str) {
+            const encoder = new TextEncoder();
+            return crypto.subtle.digest('SHA-256', encoder.encode(str))
+                .then(hashBuffer => {
+                    const hashArray = Array.from(new Uint8Array(hashBuffer)); // convert buffer to byte array
+                    return hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+                });
+        }
+
+        async function findNonces() {
+            const prefix = document.getElementById("prefix").value;
+            const inputString = document.getElementById("inputString").value;
+            const resultsDiv = document.getElementById("results");
+            resultsDiv.innerHTML = ""; // Clear previous results
+
+            let found = 0;
+            let nonce = 0;
+            let startTime = performance.now();
+
+            while (found < 20) {
+                let nonceString = inputString + nonce.toString();
+                let hash = await sha256(nonceString);
+                let base64Hash = btoa(hash); // Convert the hash to Base64
+
+                if (base64Hash.startsWith(prefix)) {
+                    found++;
+                    let resultItem = document.createElement("p");
+                    resultItem.textContent = `Nonce: ${nonce}, Hash: ${base64Hash}`;
+                    resultsDiv.appendChild(resultItem);
+                }
+
+                nonce++;
+            }
+
+            let endTime = performance.now();
+            let timeTaken = ((endTime - startTime) / 1000).toFixed(2); // in seconds
+            let timeResult = document.createElement("p");
+            timeResult.textContent = `Time taken: ${timeTaken} seconds`;
+            resultsDiv.appendChild(timeResult);
+        }
+    </script>
+</body>
+</html>
